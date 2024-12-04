@@ -31,14 +31,17 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    // Docker login
-                    //sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    // Docker login using stored Jenkins credentials
+                    withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    // Docker login using the credentials from Jenkins
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
             
                     // Docker push command
                     sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
                 }
             }
         }
+    
 
         stage('Deploy to Kubernetes') {
             steps {
