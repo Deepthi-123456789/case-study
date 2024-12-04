@@ -16,6 +16,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Checkout the latest code from the Git repository
                 git branch: 'main', url: 'https://github.com/Deepthi-123456789/case-study.git'
             }
         }
