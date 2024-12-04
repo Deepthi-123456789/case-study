@@ -31,11 +31,15 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    // Push image to DockerHub
+                    // Docker login
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+            
+                    // Docker push command
                     sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
