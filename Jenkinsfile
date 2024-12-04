@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+        git 'Git'  
+    }
     
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/Destroy')
