@@ -7,11 +7,7 @@ pipeline {
         string(name: 'ImageTag', description: "tag of the docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "name of the Application", defaultValue: 'deepthi555')
     }
-    environment 
-    {
-        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')  // AWS access key stored in Jenkins credentials
-        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')  // AWS secret key stored in Jenkins credentials
-    }
+    
     stages 
     {
         stage('Git Checkout'){
