@@ -24,8 +24,7 @@ pipeline {
          when { expression {  params.action == 'create' } }
             steps{
                script{
-                   
-                   dockerBuild("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+                    sh "docker build -t ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag} ."
                }
             }
         }
