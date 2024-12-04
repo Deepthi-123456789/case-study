@@ -1,52 +1,39 @@
 pipeline {
     agent any
-
     environment {
-        REGISTRY = 'your-docker-registry-url'
-        IMAGE_NAME = 'your-image-name'
-        KUBECONFIG = '/path/to/kubeconfig' // Set this to the Kubeconfig file's path
+        REGISTRY = 'your-dockerhub-username'
+        APP_NAME = 'nodejs-sample-app'
+        KUBE_CONFIG_PATH = credentials('kubeconfig-credentials-id')
     }
-
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo.git'
+                git branch: 'main', url: 'https://github.com/your-repo/nodejs-sample-app.git'
             }
         }
-        stage('Build Artifact') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'docker build -t ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} .'
-                }
-            }
-        }
-        stage('Push to Registry') {
-            steps {
-                script {
-                    sh """
-                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                    docker push ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-                    """
-                }
+                sh '''
+                docker build -t $REGISTRY/$APP_NAME:${BUILD_NUMBER} .
+                docker login -u your-dockerhub-username -p your-password
+                docker push $REGISTRY/$APP_NAME:${BUILD_NUMBER}
+                '''
             }
         }
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh """
-                    kubectl --kubeconfig=$KUBECONFIG set image deployment/your-deployment ${IMAGE_NAME}=${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-                    """
-                }
+                sh '''
+                kubectl set image deployment/$APP_NAME $APP_NAME=$REGISTRY/$APP_NAME:${BUILD_NUMBER} --kubeconfig=$KUBE_CONFIG_PATH
+                '''
             }
         }
     }
-
     post {
         success {
-            echo "Build and Deployment successful!"
+            echo 'Deployment completed successfully!'
         }
         failure {
-            echo "Build or Deployment failed!"
+            echo 'Deployment failed!'
         }
     }
 }
