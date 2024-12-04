@@ -14,11 +14,13 @@ pipeline {
     }
     stages 
     {
-        stage('Checkout') 
-        {
-            steps {
-                // Checkout the latest code from the Git repository
-                git branch: 'main', url: 'https://github.com/Deepthi-123456789/case-study.git'
+        stage('Git Checkout'){
+                    when { expression {  params.action == 'create' } }
+            steps{
+            gitCheckout(
+                branch: "main",
+                url: "https://github.com/Deepthi-123456789/case-study.git"
+            )
             }
         }
         stage('Docker Image Build') 
