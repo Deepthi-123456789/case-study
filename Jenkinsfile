@@ -2,9 +2,16 @@ pipeline {
     agent any
     environment {
         // Docker image name
-        DOCKER_IMAGE = "deepthi999/nginx:latest"
+        DOCKER_IMAGE = "nginx:latest"
         // Kubernetes deployment name
         K8S_DEPLOYMENT = "nginx-deployment"
+    }
+    parameters{
+
+        choice(name: 'action', choices: 'create\ndelete', description: 'Choose create/Destroy')
+        string(name: 'ImageName', description: "name of the docker build", defaultValue: 'nginx')
+        string(name: 'ImageTag', description: "tag of the docker build", defaultValue: 'v1')
+        string(name: 'DockerHubUser', description: "name of the Application", defaultValue: 'deepthi999')
     }
     stages {
         stage('Checkout') {
@@ -13,26 +20,24 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Deepthi-123456789/case-study.git'
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build the Docker image using the Dockerfile
-                    echo "Building Docker image..."
-                    sh "docker build -t ${DOCKER_IMAGE} ."
-                }
+         stage('Docker Image Build'){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{
+                   
+                   dockerBuild("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
             }
         }
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    // Log in to Docker Hub and push the image to the repository
-                    echo "Pushing Docker image to Docker Hub..."
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        sh "docker push ${DOCKER_IMAGE}"
-                    }
-                }
+        stage('Docker Image Push : DockerHub '){
+         when { expression {  params.action == 'create' } }
+            steps{
+               script{
+                   
+                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+               }
             }
-        }
+        }   
         stage('Deploy to Kubernetes') {
             steps {
                 script {
