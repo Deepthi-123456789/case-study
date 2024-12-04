@@ -32,7 +32,7 @@ pipeline {
             steps {
                 script {
                     // Docker login
-                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    //sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
             
                     // Docker push command
                     sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
