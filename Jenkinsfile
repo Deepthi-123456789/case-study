@@ -1,39 +1,61 @@
 pipeline {
     agent any
     environment {
-        REGISTRY = 'your-dockerhub-username'
-        APP_NAME = 'nodejs-sample-app'
-        KUBE_CONFIG_PATH = credentials('kubeconfig-credentials-id')
+        // Docker image name
+        DOCKER_IMAGE = "deepthi999/nginx:latest"
+        // Kubernetes deployment name
+        K8S_DEPLOYMENT = "nginx-deployment"
     }
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo/nodejs-sample-app.git'
+                // Checkout the latest code from the Git repository
+                git branch: 'main', url: 'https://github.com/Deepthi-123456789/case-study.git'
             }
         }
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $REGISTRY/$APP_NAME:${BUILD_NUMBER} .
-                docker login -u your-dockerhub-username -p your-password
-                docker push $REGISTRY/$APP_NAME:${BUILD_NUMBER}
-                '''
+                script {
+                    // Build the Docker image using the Dockerfile
+                    echo "Building Docker image..."
+                    sh "docker build -t ${DOCKER_IMAGE} ."
+                }
+            }
+        }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    // Log in to Docker Hub and push the image to the repository
+                    echo "Pushing Docker image to Docker Hub..."
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+                        sh "docker push ${DOCKER_IMAGE}"
+                    }
+                }
             }
         }
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                kubectl set image deployment/$APP_NAME $APP_NAME=$REGISTRY/$APP_NAME:${BUILD_NUMBER} --kubeconfig=$KUBE_CONFIG_PATH
-                '''
+                script {
+                    // Apply Kubernetes deployment configuration
+                    echo "Deploying to Kubernetes..."
+                    sh """
+                        cd nginx
+                        helm install nginx .
+                    """
+                }
             }
         }
     }
     post {
+        always {
+            // Clean up or any post-action after the pipeline execution
+            echo "Pipeline execution complete!"
+        }
         success {
-            echo 'Deployment completed successfully!'
+            echo "CI/CD Pipeline succeeded!"
         }
         failure {
-            echo 'Deployment failed!'
+            echo "CI/CD Pipeline failed."
         }
     }
 }
