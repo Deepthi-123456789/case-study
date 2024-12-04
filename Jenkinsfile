@@ -1,53 +1,51 @@
 pipeline {
     agent any
-    tools {
-        git 'Git'  
-    }
-    
+
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/Destroy')
-        string(name: 'ImageName', description: "Name of the Docker image", defaultValue: 'nginx')
-        string(name: 'ImageTag', description: "Tag of the Docker image", defaultValue: 'v1')
-        string(name: 'DockerHubUser', description: "Docker Hub Username", defaultValue: 'deepthi555')
+        string(name: 'ImageName', description: "Name of the Docker image to build", defaultValue: 'nginx')
+        string(name: 'ImageTag', description: "Tag for the Docker image", defaultValue: 'v1')
+        string(name: 'DockerHubUser', description: "DockerHub username", defaultValue: 'deepthi555')
     }
+
     environment {
-        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
-        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')
+        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')  // AWS access key stored in Jenkins credentials
+        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')  // AWS secret key stored in Jenkins credentials
     }
+
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the latest code from the Git repository
                 git branch: 'main', url: 'https://github.com/Deepthi-123456789/case-study.git'
             }
         }
+
         stage('Docker Image Build') {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    echo "Building Docker image ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
                     sh "docker build -t ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag} ."
                 }
             }
         }
+
         stage('Docker Image Push : DockerHub') {
             when { expression { params.action == 'create' } }
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        echo "Logging into Docker Hub..."
                         sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                        echo "Pushing Docker image ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
                         sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
                     }
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
+            when { expression { params.action == 'create' } }
             steps {
                 script {
                     try {
-                        echo "Deploying to Kubernetes using Helm..."
                         sh """
                         export AWS_ACCESS_KEY_ID=$ACCESS_KEY
                         export AWS_SECRET_ACCESS_KEY=$SECRET_KEY
@@ -63,6 +61,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             echo "Pipeline execution complete!"
