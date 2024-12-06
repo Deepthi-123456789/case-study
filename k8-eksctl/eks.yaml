@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: roboshop        # Cluster name
   region: us-east-1
-  kubernetesVersion: "1.24"   # Correct placement of kubernetesVersion
+  
 
 managedNodeGroups:
   - name: spot
