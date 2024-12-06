@@ -133,7 +133,7 @@ pipeline {
                         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                             sh '''
                                 # Provision the EKS cluster using eksctl
-                                eksctl create cluster -f eks.yaml --region $AWS_REGION
+                                eksctl create cluster -f eks.yaml 
                             '''
                         }
                     }
