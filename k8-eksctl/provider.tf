@@ -8,7 +8,7 @@ terraform {
   
   backend "s3" {
     bucket = "pjdevops-remote"
-    key    = "ekctl"
+    key    = "ekcs"
     region = "us-east-1"
     dynamodb_table = "pjdevops-remote-locking"
     }
