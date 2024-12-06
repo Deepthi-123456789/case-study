@@ -1,8 +1,10 @@
 pipeline {
     agent any
     environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-credentials').username
+        AWS_SECRET_ACCESS_KEY = credentials('aws-credentials').password
         AWS_REGION = 'us-east-1' // Replace with your AWS region
-        KUBECONFIG = 'kubeconfig' // Path to kubeconfig (generated dynamically)
+        //KUBECONFIG = 'kubeconfig' // Path to kubeconfig (generated dynamically)
     }
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/destroy')
@@ -91,6 +93,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
+                    ls -al
                     cd case-study/k8-ekscl
                     terraform apply -var-file=workstation.tf -auto-approve
                 """
@@ -100,6 +103,7 @@ pipeline {
             when { expression { params.action == 'delete' } }
             steps {
                 sh """
+                    ls -al
                     cd case-study/k8-eksctl
                     terraform destroy -auto-approve
                 """
