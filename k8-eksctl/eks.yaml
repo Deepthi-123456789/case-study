@@ -2,12 +2,12 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: roboshop  ##cluster name
+  name: roboshop        # Cluster name
   region: us-east-1
+  kubernetesVersion: "1.24"   # Correct placement of kubernetesVersion
 
 managedNodeGroups:
   - name: spot
     instanceType: m5.large
     desiredCapacity: 1
     spot: true
-kubernetesVersion: "1.24"
