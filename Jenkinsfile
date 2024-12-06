@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-east-1'  // Replace with your AWS region
-        KUBECONFIG = 'kubeconfig'  // Path to kubeconfig (generated dynamically)
+        //KUBECONFIG = 'kubeconfig'  // Path to kubeconfig (generated dynamically)
     }
 
     parameters {
@@ -64,8 +64,9 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
-                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
+                                     string(credentialsId: 'aws-credentials', variable: 'password')]) 
+                                    {
                         sh """
                             cd case-study/k8-eksctl
                             terraform init -reconfigure
@@ -91,8 +92,8 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
-                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
+                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
                         sh """
                             cd case-study/k8-eksctl
                             terraform plan
@@ -106,8 +107,8 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
-                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
+                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
                         sh """
                             cd case-study/k8-eksctl
                             terraform apply -var-file=workstation.tf -auto-approve
@@ -121,8 +122,8 @@ pipeline {
             when { expression { params.action == 'delete' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
-                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
+                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
                         sh """
                             ls -la
                             cd case-study/k8-eksctl
@@ -138,8 +139,8 @@ pipeline {
             steps {
                 dir('case-study/k8-eksctl') {
                     script {
-                        withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
-                                         string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
+                                         string(credentialsId: 'aws-credentials', variable: 'password')]) {
                             sh '''
                                 # Provision the EKS cluster using eksctl
                                 eksctl create cluster -f eks.yaml --region $AWS_REGION
