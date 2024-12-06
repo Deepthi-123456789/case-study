@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: roboshop
   region: us-east-1
-  version: "1.24"
+  version: "1.20"
 
 managedNodeGroups:
   - name: spot
