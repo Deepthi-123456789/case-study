@@ -1,17 +1,17 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-credentials').username
-        AWS_SECRET_ACCESS_KEY = credentials('aws-credentials').password
-        AWS_REGION = 'us-east-1' // Replace with your AWS region
-        //KUBECONFIG = 'kubeconfig' // Path to kubeconfig (generated dynamically)
+        AWS_REGION = 'us-east-1'  // Replace with your AWS region
+        KUBECONFIG = 'kubeconfig'  // Path to kubeconfig (generated dynamically)
     }
+
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/destroy')
         string(name: 'ImageName', description: "Name of the Docker build", defaultValue: 'web')
         string(name: 'ImageTag', description: "Tag of the Docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "DockerHub Username", defaultValue: 'deepthi555')
     }
+
     stages {
         stage('Checkout SCM') {
             when { expression { params.action == 'create' } }
@@ -22,7 +22,7 @@ pipeline {
                 '''
             }
         }
-        
+
         // Docker Image Build Stage
         stage('Docker Image Build') {
             when { expression { params.action == 'create' } }
@@ -47,6 +47,7 @@ pipeline {
                 echo "Docker Image Push completed"
             }
         }
+
         stage('Validate Workspace') {
             steps {
                 script {
@@ -62,14 +63,19 @@ pipeline {
         stage('Init') {
             when { expression { params.action == 'create' } }
             steps {
-                sh """
-                    cd case-study/k8-eksctl
-                    terraform init -reconfigure
-                """
+                script {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
+                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh """
+                            cd case-study/k8-eksctl
+                            terraform init -reconfigure
+                        """
+                    }
+                }
             }
         }
-        stage('Verify Terraform Files') 
-        {
+
+        stage('Verify Terraform Files') {
             steps {
                 script {
                     sh '''
@@ -80,46 +86,70 @@ pipeline {
                 }
             }
         }
+
         stage('Plan') {
             when { expression { params.action == 'create' } }
             steps {
-                sh """
-                    cd case-study/k8-eksctl
-                    terraform plan
-                """
+                script {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
+                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh """
+                            cd case-study/k8-eksctl
+                            terraform plan
+                        """
+                    }
+                }
             }
         }
+
         stage('Apply') {
             when { expression { params.action == 'create' } }
             steps {
-                sh """
-                    ls -al
-                    cd case-study/k8-ekscl
-                    terraform apply -var-file=workstation.tf -auto-approve
-                """
+                script {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
+                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh """
+                            cd case-study/k8-eksctl
+                            terraform apply -var-file=workstation.tf -auto-approve
+                        """
+                    }
+                }
             }
         }
+
         stage('Destroy') {
             when { expression { params.action == 'delete' } }
             steps {
-                sh """
-                    ls -al
-                    cd case-study/k8-eksctl
-                    terraform destroy -auto-approve
-                """
+                script {
+                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
+                                     string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh """
+                            ls -la
+                            cd case-study/k8-eksctl
+                            terraform destroy -auto-approve
+                        """
+                    }
+                }
             }
         }
+
         stage('Provision EKS Cluster') {
             when { expression { params.action == 'create' } }
             steps {
                 dir('case-study/k8-eksctl') {
-                    sh '''
-                        # Provision the EKS cluster using eksctl
-                        eksctl create cluster -f eks.yaml --region $AWS_REGION
-                    '''
+                    script {
+                        withCredentials([string(credentialsId: 'aws-credentials', variable: 'AWS_ACCESS_KEY_ID'),
+                                         string(credentialsId: 'aws-credentials', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                            sh '''
+                                # Provision the EKS cluster using eksctl
+                                eksctl create cluster -f eks.yaml --region $AWS_REGION
+                            '''
+                        }
+                    }
                 }
             }
         }
+
         stage('Deploy Application using Helm') {
             when { expression { params.action == 'create' } }
             steps {
@@ -131,6 +161,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             echo 'Pipeline completed.'
