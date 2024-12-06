@@ -1,84 +1,109 @@
 pipeline {
     agent any
+    environment {
+        AWS_REGION = 'us-east-1' // Replace with your AWS region
+        KUBECONFIG = 'kubeconfig' // Path to kubeconfig (generated dynamically)
+    }
+     parameters {
+        choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/Destroy')
+    }
+     stage('Checkout SCM') {
+            when { expression { params.action == 'create' } }
+            steps {
+                sh '''
+                    rm -rf case-study1
+                    git clone https://github.com/Deepthi-123456789/case-study.git
+                '''
+            }
+        }
+        stage('Init')
+         {
+            when { expression { params.action == 'create' } }
+            steps {
+                sh """
+                    cd k8-eksctl
+                    terraform init -reconfigure
+                """
+            }
+        }
 
-    parameters {
-        choice(name: 'action', choices: 'create\ndelete', description: 'Choose create/Destroy')
-        string(name: 'ImageName', description: "name of the docker build", defaultValue: 'nginx')
-        string(name: 'ImageTag', description: "tag of the docker build", defaultValue: 'v1')
-        string(name: 'DockerHubUser', description: "name of the Application", defaultValue: 'deepthi555')
+        stage('Plan') 
+        {
+             when { expression { params.action == 'create' } }
+            steps {
+                sh """
+                    cd terraform
+                    terraform plan 
+                """
+            }
+        }
+
+        stage('Apply') 
+        {
+            when { expression { params.action == 'create' } }
+            steps {
+                sh """
+                    cd ekscl
+                    terraform apply -auto-approve
+                """
+            }
+        }
+        stage('Destroy') 
+        {  
+            when { expression { params.action == 'destroy' } }
+            steps {
+                sh """
+                    cd k8-eksctl
+                    terraform destroy -auto-approve
+                """
+            }
+        }
+        
     }
-    
-    stages 
-    {
-        stage('Git Checkout'){
-                    when { expression {  params.action == 'create' } }
-            steps{
-            gitCheckout(
-                branch: "main",
-                url: "https://github.com/Deepthi-123456789/case-study.git"
-            )
+        stage('Provision EKS Cluster') {
+            steps {
+                dir('terraform-directory') { // Replace with the path to your Terraform files
+                    sh '''
+                    terraform init
+                    terraform apply -auto-approve
+                    '''
+                }
             }
         }
-        stage('Docker Image Build') 
-        {
-            when { expression { params.action == 'create' } }
+        stage('Configure Kubectl and Helm') {
             steps {
-                echo "Starting Docker Image Build Stage"
-                script {
-                    sh "docker build -t ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag} ."
-                }
-                echo "Docker Image Build completed"
+                sh '''
+                # Configure kubectl for EKS
+                aws eks update-kubeconfig --region $AWS_REGION --name <eks-cluster-name>
+
+                # Verify kubectl installation
+                kubectl version --client
+
+                # Verify Helm installation
+                helm version
+                '''
             }
         }
-        stage('Docker Image Push : DockerHub')
-        {
-            when { expression { params.action == 'create' } }
+        stage('Deploy Application using Helm') {
             steps {
-                echo "Starting Docker Image Push Stage"
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) 
-                    {
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                        sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
-                    }
+                dir('web') { // Replace with the path to your Helm chart folder
+                    sh '''
+                    helm upgrade --install my-web-app . \
+                    --namespace web-namespace --create-namespace
+                    '''
                 }
-                echo "Docker Image Push completed"
-            }
-        }
-        stage('Deploy to Kubernetes') 
-        {
-            when { expression { params.action == 'create' } }
-            steps {
-                echo "Starting Deploy to Kubernetes Stage"
-                script {
-                    try {
-                        sh """
-                        export AWS_ACCESS_KEY_ID=$ACCESS_KEY
-                        export AWS_SECRET_ACCESS_KEY=$SECRET_KEY
-                        cd nginx
-                        helm upgrade --install nginx-deployment . --namespace default
-                        """
-                    } catch (Exception e) {
-                        echo "Helm deployment failed."
-                        currentBuild.result = 'FAILURE'
-                        throw e
-                    }
-                }
-                echo "Deploy to Kubernetes completed"
             }
         }
     }
-    post 
-    {
+    post {
         always {
-            // Clean up or any post-action after the pipeline execution
-            echo "Pipeline execution complete!"
+            echo 'Pipeline completed.'
         }
         success {
-            echo "CI/CD Pipeline succeeded!"
+            echo 'Deployment successful!'
         }
         failure {
-            echo "CI/CD Pipeline failed."
+            echo 'Pipeline failed. Check logs for details.'
         }
     }
 }

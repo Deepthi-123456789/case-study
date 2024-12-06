@@ -1,3 +1,0 @@
-deployment:
-  replicas: 3
-  imageVersion: mainline-alpine3.18-perl
