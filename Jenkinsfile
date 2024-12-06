@@ -104,7 +104,7 @@ pipeline {
                         sh """
                             ls -al
                             cd case-study/k8-eksctl
-                            terraform apply -var-file=workstation.tf -auto-approve
+                            terraform apply -auto-approve
                         """
                     }
                 }
