@@ -62,10 +62,15 @@ mv kubectl /usr/local/bin/kubectl
 VALIDATE $? "Kubectl installation"
 
 # Installing eksctl
-curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
-tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+#curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+#tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+#sudo mv /tmp/eksctl /usr/local/bin
+#VALIDATE $? "eksctl installation"
+sudo apt update
+curl --silent --location "https://github.com/eksctl-io/eksctl/releases/download/v0.55.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
 sudo mv /tmp/eksctl /usr/local/bin
-VALIDATE $? "eksctl installation"
+eksctl version
+
 
 # Installing kubens
 sudo git clone https://github.com/ahmetb/kubectx /opt/kubectx
