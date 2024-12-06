@@ -59,7 +59,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd case-study/terraform
+                    cd case-study/k8-eksctl
                     terraform plan
                 """
             }
@@ -68,7 +68,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd case-study/ekscl
+                    cd case-study/k8-ekscl
                     terraform apply -auto-approve
                 """
             }
