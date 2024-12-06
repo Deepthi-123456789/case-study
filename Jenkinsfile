@@ -45,6 +45,17 @@ pipeline {
                 echo "Docker Image Push completed"
             }
         }
+        stage('Validate Workspace') {
+            steps {
+                script {
+                    sh '''
+                    echo "Validating directory and Terraform files..."
+                    cd case-study/k8-eksctl
+                    ls -al
+                    '''
+                }
+            }
+        }
 
         stage('Init') {
             when { expression { params.action == 'create' } }
