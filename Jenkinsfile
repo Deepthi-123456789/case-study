@@ -81,7 +81,7 @@ pipeline {
             steps {
                 sh """
                     cd case-study/k8-ekscl
-                    terraform apply -auto-approve
+                    terraform apply -var-file=workstation.tf -auto-approve
                 """
             }
         }
