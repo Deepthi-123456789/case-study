@@ -68,7 +68,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd case-study/k8-ekscl
+                    cd case-study/k8-ekscl/worksation.tf
                     terraform apply -auto-approve
                 """
             }
