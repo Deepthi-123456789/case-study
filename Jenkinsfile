@@ -6,6 +6,9 @@ pipeline {
     }
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/destroy')
+        string(name: 'ImageName', description: "Name of the Docker build", defaultValue: 'web')
+        string(name: 'ImageTag', description: "Tag of the Docker build", defaultValue: 'v1')
+        string(name: 'DockerHubUser', description: "DockerHub Username", defaultValue: 'deepthi555')
     }
     stages {
         stage('Checkout SCM') {
@@ -17,6 +20,32 @@ pipeline {
                 '''
             }
         }
+        
+        // Docker Image Build Stage
+        stage('Docker Image Build') {
+            when { expression { params.action == 'create' } }
+            steps {
+                sh """
+                    docker build -t ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag} .
+                """
+            }
+        }
+
+        // Docker Image Push Stage
+        stage('Docker Image Push') {
+            when { expression { params.action == 'create' } }
+            steps {
+                echo "Starting Docker Image Push Stage"
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        sh "docker push ${params.DockerHubUser}/${params.ImageName}:${params.ImageTag}"
+                    }
+                }
+                echo "Docker Image Push completed"
+            }
+        }
+
         stage('Init') {
             when { expression { params.action == 'create' } }
             steps {
@@ -56,10 +85,10 @@ pipeline {
         stage('Provision EKS Cluster') {
             when { expression { params.action == 'create' } }
             steps {
-                dir('case-study/terraform-directory') { // Replace with the path to your Terraform files
+                dir('case-study/k8-eksctl') {
                     sh '''
-                        terraform init
-                        terraform apply -auto-approve
+                        # Provision the EKS cluster using eksctl
+                        eksctl create cluster -f eks.yaml --region $AWS_REGION
                     '''
                 }
             }
