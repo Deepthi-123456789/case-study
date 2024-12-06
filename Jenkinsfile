@@ -4,92 +4,72 @@ pipeline {
         AWS_REGION = 'us-east-1' // Replace with your AWS region
         KUBECONFIG = 'kubeconfig' // Path to kubeconfig (generated dynamically)
     }
-     parameters {
-        choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/Destroy')
+    parameters {
+        choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/destroy')
     }
-     stage('Checkout SCM') {
+    stages {
+        stage('Checkout SCM') {
             when { expression { params.action == 'create' } }
             steps {
                 sh '''
-                    rm -rf case-study1
+                    rm -rf case-study
                     git clone https://github.com/Deepthi-123456789/case-study.git
                 '''
             }
         }
-        stage('Init')
-         {
+        stage('Init') {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd k8-eksctl
+                    cd case-study/k8-eksctl
                     terraform init -reconfigure
                 """
             }
         }
-
-        stage('Plan') 
-        {
-             when { expression { params.action == 'create' } }
-            steps {
-                sh """
-                    cd terraform
-                    terraform plan 
-                """
-            }
-        }
-
-        stage('Apply') 
-        {
+        stage('Plan') {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd ekscl
+                    cd case-study/terraform
+                    terraform plan
+                """
+            }
+        }
+        stage('Apply') {
+            when { expression { params.action == 'create' } }
+            steps {
+                sh """
+                    cd case-study/ekscl
                     terraform apply -auto-approve
                 """
             }
         }
-        stage('Destroy') 
-        {  
-            when { expression { params.action == 'destroy' } }
+        stage('Destroy') {
+            when { expression { params.action == 'delete' } }
             steps {
                 sh """
-                    cd k8-eksctl
+                    cd case-study/k8-eksctl
                     terraform destroy -auto-approve
                 """
             }
         }
-        
-    }
         stage('Provision EKS Cluster') {
+            when { expression { params.action == 'create' } }
             steps {
-                dir('terraform-directory') { // Replace with the path to your Terraform files
+                dir('case-study/terraform-directory') { // Replace with the path to your Terraform files
                     sh '''
-                    terraform init
-                    terraform apply -auto-approve
+                        terraform init
+                        terraform apply -auto-approve
                     '''
                 }
             }
         }
-        stage('Configure Kubectl and Helm') {
-            steps {
-                sh '''
-                # Configure kubectl for EKS
-                aws eks update-kubeconfig --region $AWS_REGION --name <eks-cluster-name>
-
-                # Verify kubectl installation
-                kubectl version --client
-
-                # Verify Helm installation
-                helm version
-                '''
-            }
-        }
         stage('Deploy Application using Helm') {
+            when { expression { params.action == 'create' } }
             steps {
-                dir('web') { // Replace with the path to your Helm chart folder
+                dir('case-study/web') { // Replace with the actual path to your Helm chart folder
                     sh '''
-                    helm upgrade --install my-web-app . \
-                    --namespace web-namespace --create-namespace
+                        helm upgrade --install web -n roboshop --create-namespace .
                     '''
                 }
             }
