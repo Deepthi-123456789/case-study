@@ -110,7 +110,7 @@ pipeline {
                 }
             }
         }
-
+        //when destroy
         stage('Destroy') {
             when { expression { params.action == 'delete' } }
             steps {
