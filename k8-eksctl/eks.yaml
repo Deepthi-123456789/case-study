@@ -10,3 +10,4 @@ managedNodeGroups:
     instanceType: m5.large
     desiredCapacity: 1
     spot: true
+kubernetesVersion: "1.24"
