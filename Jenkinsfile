@@ -2,16 +2,13 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-east-1'  // Replace with your AWS region
-        //KUBECONFIG = 'kubeconfig'  // Path to kubeconfig (generated dynamically)
     }
-
     parameters {
         choice(name: 'action', choices: ['create', 'delete'], description: 'Choose create/destroy')
         string(name: 'ImageName', description: "Name of the Docker build", defaultValue: 'web')
         string(name: 'ImageTag', description: "Tag of the Docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "DockerHub Username", defaultValue: 'deepthi555')
     }
-
     stages {
         stage('Checkout SCM') {
             when { expression { params.action == 'create' } }
@@ -22,7 +19,7 @@ pipeline {
                 '''
             }
         }
-
+        
         // Docker Image Build Stage
         stage('Docker Image Build') {
             when { expression { params.action == 'create' } }
@@ -47,7 +44,6 @@ pipeline {
                 echo "Docker Image Push completed"
             }
         }
-
         stage('Validate Workspace') {
             steps {
                 script {
@@ -64,9 +60,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
-                                     string(credentialsId: 'aws-credentials', variable: 'password')]) 
-                                    {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                         sh """
                             cd case-study/k8-eksctl
                             terraform init -reconfigure
@@ -92,8 +86,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
-                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                         sh """
                             cd case-study/k8-eksctl
                             terraform plan
@@ -107,9 +100,9 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
-                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                         sh """
+                            ls -al
                             cd case-study/k8-eksctl
                             terraform apply -var-file=workstation.tf -auto-approve
                         """
@@ -122,10 +115,8 @@ pipeline {
             when { expression { params.action == 'delete' } }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
-                                     string(credentialsId: 'aws-credentials', variable: 'password')]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                         sh """
-                            ls -la
                             cd case-study/k8-eksctl
                             terraform destroy -auto-approve
                         """
@@ -139,8 +130,7 @@ pipeline {
             steps {
                 dir('case-study/k8-eksctl') {
                     script {
-                        withCredentials([string(credentialsId: 'aws-credentials', variable: 'username'),
-                                         string(credentialsId: 'aws-credentials', variable: 'password')]) {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                             sh '''
                                 # Provision the EKS cluster using eksctl
                                 eksctl create cluster -f eks.yaml --region $AWS_REGION
@@ -162,7 +152,6 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             echo 'Pipeline completed.'
