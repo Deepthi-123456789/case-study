@@ -55,11 +55,23 @@ pipeline {
                 """
             }
         }
+        stage('Verify Terraform Files') 
+        {
+            steps {
+                script {
+                    sh '''
+                    echo "Checking contents of case-study/k8-eksctl directory..."
+                    cd case-study/k8-eksctl
+                    ls -al
+                    '''
+                }
+            }
+        }
         stage('Plan') {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd case-study/k8-eksctl/workstation.tf
+                    cd case-study/k8-eksctl
                     terraform plan
                 """
             }
@@ -68,7 +80,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 sh """
-                    cd case-study/k8-ekscl/worksation.tf
+                    cd case-study/k8-ekscl
                     terraform apply -auto-approve
                 """
             }
